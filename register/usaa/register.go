@@ -32,7 +32,7 @@ func (u *usaaRegister) Load(r io.Reader) error {
 		} else if err != nil {
 			return fmt.Errorf("failed to load register: %v\n", err)
 		}
-		ent, err := NewEntry(raw)
+		ent, err := newEntry(raw)
 		if err != nil {
 			return fmt.Errorf("failed to get new entry: %v\n", err)
 		}

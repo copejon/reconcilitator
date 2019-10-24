@@ -22,7 +22,7 @@ const (
 	cleared
 )
 
-func NewEntry(s []string) (*entry, error) {
+func newEntry(s []string) (*entry, error) {
 	if s[acct] != "Primary Checking" {
 		return nil, nil
 	}
@@ -95,3 +95,51 @@ func (e *entry) Amount() float64 {
 	return e.inflow
 }
 
+var _ iface.Entry = &splitEntry{}
+
+type splitEntry struct {
+	splits  []entry
+	date    time.Time
+	payee   string
+	amount  float64
+	cleared bool
+	id      uuid.UUID
+}
+
+func newSplitEntry(splits []entry) *splitEntry {
+	s := &splitEntry{
+		splits:  splits,
+		date:    splits[0].Date(),
+		payee:   splits[0].Payee(),
+		amount:  splits[0].Amount(),
+		cleared: false,
+		id:      uuid.New(),
+	}
+	return s
+}
+
+func (s *splitEntry) Date() time.Time {
+	return s.date
+}
+
+func (s *splitEntry) Payee() string {
+	return s.payee
+}
+
+func (s *splitEntry) Amount() float64 {
+	return s.amount
+}
+
+func (s *splitEntry) Clear() {
+	if ! s.cleared {
+		s.cleared = true
+	}
+}
+
+func (s *splitEntry) IsCleared() bool {
+	return s.cleared
+}
+
+func (s *splitEntry) ID() uuid.UUID {
+	return s.id
+}

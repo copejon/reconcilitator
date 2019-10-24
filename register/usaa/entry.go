@@ -29,7 +29,7 @@ const (
 	amount
 )
 
-func NewEntry(s []string) (*entry, error) {
+func newEntry(s []string) (*entry, error) {
 	var err error
 	errMsg := `couldn't generate entry: %v\n'`
 	e := new(entry)

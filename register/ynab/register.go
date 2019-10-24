@@ -38,7 +38,7 @@ func (y *ynabRegister) Load(r io.Reader) error {
 		} else if err != nil {
 			return fmt.Errorf("failed to load register: %v\n", err)
 		}
-		ent, err := NewEntry(raw)
+		ent, err := newEntry(raw)
 		if err != nil {
 			return fmt.Errorf("failed to load new entry: %v\n", ent)
 		}
