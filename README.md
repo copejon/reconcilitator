@@ -6,7 +6,7 @@ Still a WIP.
 ## Purpose
 
 This project is meant to facilitate reconciling my bank accound to my YNAB budget by comparing one exported CSV against one another and
-reporting unmatched entries.  Using this report, I can quickly find and either add or change the date of entries in the budget.
+reporting unmatched entries.  Using this report, I can quickly find and either add or correct the date of entries in the budget.
 Besides streamlininbg bugdet reconciliation, it also provides for a mostly<sup>*</sup> accurate parity between each 
 register's running balance (if your using [Toolkit for YNAB]( https://www.toolkitforynab.com/), which you should).
 
