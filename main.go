@@ -5,55 +5,55 @@ import (
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/pflag"
-	"main/datehash"
+	"main/dateMapper"
 	"main/register"
-	"main/register/translators/usaa"
-	"main/register/translators/ynab"
+	uxltr "main/register/translators/usaa"
+	yxltr "main/register/translators/ynab"
 	"os"
 	"time"
 )
 
 var (
-	ynabRegister,
 	ynabAccount,
-	bankRegister string
+	ynabCSV,
+	bankCSV string
 )
 
 func init() {
 	pflag.StringVarP(&ynabAccount, "account", "a", "", "Case Sensitive. Because YNAB exports all accounts as one .csv, we need this to target the relative entries")
-	pflag.StringVarP(&ynabRegister, "ynab", "y", "", "Path to YNAB CSV file")
-	pflag.StringVarP(&bankRegister, "bank", "b", "", "Path to bank CSV file")
+	pflag.StringVarP(&ynabCSV, "ynab", "y", "", "Path to YNAB CSV file")
+	pflag.StringVarP(&bankCSV, "bank", "b", "", "Path to bank CSV file")
 	pflag.Parse()
 }
 
 func main() {
 
-	if ynabRegister == "" {
+	if ynabCSV == "" {
 		panic(fmt.Errorf("missing required option: -ynab|-y"))
 	}
 	if ynabAccount == "" {
 		panic(fmt.Errorf("missing required option: -account|-a"))
 	}
-	if bankRegister == "" {
+	if bankCSV == "" {
 		panic(fmt.Errorf("missing required option: -bank|-b"))
 	}
 
-	ynabReg := register.NewRegister(ynab.NewTranslator(ynabAccount))
-	loadRegister(ynabReg, ynabRegister)
+	ynabReg := register.NewRegister(yxltr.NewTranslator(ynabAccount))
+	loadRegister(ynabReg, ynabCSV)
 
-	usaaReg := register.NewRegister(usaa.NewTranslator())
-	loadRegister(usaaReg, bankRegister)
+	usaaReg := register.NewRegister(uxltr.NewTranslator())
+	loadRegister(usaaReg, bankCSV)
 
-	ynabHash, err := datehash.NewDateHashMap(ynabReg)
+	ynab, err := dateMapper.NewDateMapper(ynabReg)
 	if err != nil {
 		panic(err)
 	}
-	usaaHash, err := datehash.NewDateHashMap(usaaReg)
+	usaa, err := dateMapper.NewDateMapper(usaaReg)
 	if err != nil {
 		panic(err)
 	}
 
-	cleared := ynabHash.ClearHashedEntries(usaaHash)
+	cleared := ynab.ClearEntries(usaa)
 	tbl := table.NewWriter()
 	tbl.SetAutoIndex(true)
 	tbl.SetTitle("YNAB Entries vs USAA")
@@ -78,10 +78,10 @@ func main() {
 		},
 	})
 
-	backDate := datehash.MostRecentStartTime(ynabHash, usaaHash)
+	backDate := dateMapper.MostRecentStartTime(ynab, usaa)
 
 	fmt.Printf("back date: %v\n", backDate)
-	for _, entries := range ynabHash {
+	for _, entries := range ynab {
 		for _, e := range entries {
 			if e.Date().Before(backDate) {
 				break

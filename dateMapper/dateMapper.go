@@ -1,4 +1,4 @@
-package datehash
+package dateMapper
 
 import (
 	"fmt"
@@ -9,14 +9,14 @@ import (
 	"time"
 )
 
-func NewDateHashMap(r register.Register) (DateHash, error) {
-	var m = make(DateHash)
+func NewDateMapper(r register.Register) (DateMapper, error) {
+	var m = make(DateMapper)
 	for {
 		e, err := r.Read()
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			return nil, fmt.Errorf("unable to hash entry: %v\n", err)
+			return nil, fmt.Errorf("unable to map entry: %v\n", err)
 		}
 		m[e.Date()] = append(m[e.Date()], e)
 	}
@@ -40,7 +40,7 @@ func clearEntries(lhs, rhs []*entry.Entry) (cleared int) {
 	return
 }
 
-func oldestEntry(d DateHash) time.Time {
+func oldestEntry(d DateMapper) time.Time {
 	oldest := time.Now()
 	for t := range d {
 		if t.Before(oldest) {
@@ -51,7 +51,7 @@ func oldestEntry(d DateHash) time.Time {
 	return oldest
 }
 
-func MostRecentStartTime(d1, d2 DateHash) (t time.Time) {
+func MostRecentStartTime(d1, d2 DateMapper) (t time.Time) {
 	t = oldestEntry(d1)
 	if altT := oldestEntry(d2); altT.After(t) {
 		t = altT
@@ -59,9 +59,9 @@ func MostRecentStartTime(d1, d2 DateHash) (t time.Time) {
 	return
 }
 
-type DateHash map[time.Time][]*entry.Entry
+type DateMapper map[time.Time][]*entry.Entry
 
-func (d DateHash) ClearHashedEntries(rhs DateHash) (cleared int) {
+func (d DateMapper) ClearEntries(rhs DateMapper) (cleared int) {
 	lhs := d
 
 	startDate := MostRecentStartTime(lhs, rhs)
@@ -78,7 +78,7 @@ func (d DateHash) ClearHashedEntries(rhs DateHash) (cleared int) {
 	return
 }
 
-func (d DateHash) DayHasEntry(t time.Time, amount float64) (bool, int) {
+func (d DateMapper) DayHasEntry(t time.Time, amount float64) (bool, int) {
 	day := d[t]
 	var instances int
 	for _, e := range day {
@@ -89,7 +89,7 @@ func (d DateHash) DayHasEntry(t time.Time, amount float64) (bool, int) {
 	return instances != 0, instances
 }
 
-func (d DateHash) ClearEntry(t time.Time, uuid uuid.UUID) bool {
+func (d DateMapper) ClearEntry(t time.Time, uuid uuid.UUID) bool {
 	day := d[t]
 	var cleared bool
 	for _, e := range day {
@@ -102,7 +102,7 @@ func (d DateHash) ClearEntry(t time.Time, uuid uuid.UUID) bool {
 	return cleared
 }
 
-func (d DateHash) Entries() (i int) {
+func (d DateMapper) Entries() (i int) {
 	for _, e := range d {
 		i += len(e)
 	}
