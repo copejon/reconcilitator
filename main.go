@@ -6,8 +6,8 @@ import (
 	"github.com/jedib0t/go-pretty/text"
 	"main/datehash"
 	"main/register"
-	"main/register/usaa"
-	"main/register/ynab"
+	"main/register/translators/usaa"
+	"main/register/translators/ynab"
 	"os"
 	"time"
 )
@@ -32,10 +32,10 @@ func main() {
 
 	args := os.Args[1:]
 
-	ynabReg := ynab.NewYNABRegister()
-	usaaReg := usaa.NewUSAARegister()
-
+	ynabReg := register.NewRegister(ynab.NewTranslator("Primary Checking"))
 	loadRegister(ynabReg, args[0])
+
+	usaaReg := register.NewRegister(usaa.NewTranslator())
 	loadRegister(usaaReg, args[1])
 
 	ynabHash, err := datehash.NewDateHashMap(ynabReg)
@@ -60,7 +60,7 @@ func main() {
 	}})
 
 	tbl.SetRowPainter(func(row table.Row) text.Colors {
-		if cleared, ok := row[3].(bool); ok && ! cleared {
+		if cleared, ok := row[3].(bool); ok && !cleared {
 			return text.Colors{text.BgRed, text.Bold}
 		}
 		return nil
@@ -74,7 +74,7 @@ func main() {
 
 	for _, entries := range ynabHash {
 		for _, e := range entries {
-			tbl.AppendRow(table.Row{formatDate(e.Date()), e.Payee(), e.Amount(), e.IsCleared(), e.Date().Unix()})
+			tbl.AppendRow(table.Row{formatDate(e.Date()), e.Payee(), e.Amount(), e.Cleared(), e.Date().Unix()})
 		}
 	}
 	fmt.Println(tbl.Render())

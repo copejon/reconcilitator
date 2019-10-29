@@ -1,10 +1,11 @@
 package register
 
 import (
-	"bytes"
+	"encoding/csv"
 	"fmt"
 	"io"
 	"main/register/entry"
+	"main/register/translator"
 	"strconv"
 	"strings"
 	"time"
@@ -12,40 +13,75 @@ import (
 
 type Register interface {
 	Load(io.Reader) error
-	Read() (entry.Entry, error)
-	ReadAll() ([]entry.Entry, error)
+	Read() (*entry.Entry, error)
+	ReadAll() ([]*entry.Entry, error)
 }
 
-type sourceId int
+type register struct {
+	entries    []*entry.Entry
+	xltr       translator.Translator
+	readCursor int
+}
 
-const (
-	srcUSAA sourceId = iota
-	srcYNAB
-)
+var _ Register = &register{}
 
-func GuessSource(s string) (sourceId, error) {
-	const (
-		ynab = "\"Account\""
-		usaa = "posted"
-	)
+func (r *register) Load(rdr io.Reader) error {
+	csvRdr := csv.NewReader(rdr)
+	csvRdr.LazyQuotes = true
 
-	s = stripUTF8BOM(s)
-	switch {
-	case s == usaa:
-		return srcUSAA, nil
-	case s == ynab:
-		return srcYNAB, nil
-	default:
-		return -1, fmt.Errorf("unrecognized column header: %v\n", s)
+	for {
+		line, err := csvRdr.Read()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return fmt.Errorf("failed to load register: %v\n", err)
+		}
+
+		e, err := r.xltr.ToEntry(line)
+		if err != nil {
+			return fmt.Errorf("failed to get new entry: %v\n", err)
+		}
+		if e == nil {
+			// translators are allowed to return nil entries as a result of filtering, etc.
+			continue
+		}
+		r.entries = append(r.entries, e)
+	}
+	return nil
+}
+
+func (r *register) Read() (*entry.Entry, error) {
+	if r.readCursor >= len(r.entries) {
+		return nil, io.EOF
+	}
+	e := r.entries[r.readCursor]
+	r.readCursor++
+	return e, nil
+}
+
+func (r *register) ReadAll() ([]*entry.Entry, error) {
+	if r.readCursor >= len(r.entries) {
+		return nil, io.EOF
+	}
+	remainder := r.entries[r.readCursor:]
+	r.readCursor = len(r.entries)
+	return remainder, nil
+}
+
+func NewRegister(t translator.Translator) *register {
+	return &register{
+		entries:    make([]*entry.Entry, 0),
+		readCursor: 0,
+		xltr:       t,
 	}
 }
 
-const bomBytes = "\xEF\xBB\xBF"
-
-func stripUTF8BOM(s string) string {
-	b := bytes.TrimLeft([]byte(s), bomBytes)
-	return string(b)
-}
+//const bomBytes = "\xEF\xBB\xBF"
+//
+//func stripUTF8BOM(s string) string {
+//	b := bytes.TrimLeft([]byte(s), bomBytes)
+//	return string(b)
+//}
 
 func ParseCurrency(c string) (float64, error) {
 	s := strings.Trim(c, "$")
@@ -62,6 +98,6 @@ func ParseDate(d string) (time.Time, error) {
 	if err != nil {
 		err = fmt.Errorf("error parsing entry date: %v\n", err)
 	}
-	t = t.Truncate(24*time.Hour)
+	t = t.Truncate(24 * time.Hour)
 	return t, err
 }

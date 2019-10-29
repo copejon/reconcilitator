@@ -23,15 +23,15 @@ func NewDateHashMap(r register.Register) (DateHash, error) {
 	return m, nil
 }
 
-func clearEntries(lhs, rhs []entry.Entry) (cleared int) {
+func clearEntries(lhs, rhs []*entry.Entry) (cleared int) {
 	for _, lhsEnt := range lhs {
-		if lhsEnt.IsCleared() { // Safety catch, ignore cleared LHS entries
+		if lhsEnt.Cleared() { // Safety catch, ignore cleared LHS entries
 			break
 		}
 		for _, rhsEnt := range rhs {
-			if ! rhsEnt.IsCleared() && lhsEnt.Amount() == rhsEnt.Amount() {
-				rhsEnt.Clear()
-				lhsEnt.Clear()
+			if !rhsEnt.Cleared() && lhsEnt.Amount() == rhsEnt.Amount() {
+				rhsEnt.SetCleared()
+				lhsEnt.SetCleared()
 				cleared++
 				break
 			}
@@ -42,7 +42,7 @@ func clearEntries(lhs, rhs []entry.Entry) (cleared int) {
 
 func oldestEntry(d DateHash) time.Time {
 	var oldest time.Time
-	for t, _ := range d {
+	for t := range d {
 		if t.Before(oldest) {
 			oldest = t
 		}
@@ -58,7 +58,7 @@ func MostRecentStartTime(d1, d2 DateHash) (t time.Time) {
 	return
 }
 
-type DateHash map[time.Time][]entry.Entry
+type DateHash map[time.Time][]*entry.Entry
 
 func (d DateHash) ClearHashedEntries(rhs DateHash) (cleared int) {
 	lhs := d
@@ -92,8 +92,8 @@ func (d DateHash) ClearEntry(t time.Time, uuid uuid.UUID) bool {
 	day := d[t]
 	var cleared bool
 	for _, e := range day {
-		if e.ID() == uuid {
-			e.Clear()
+		if e.Id() == uuid {
+			e.SetCleared()
 			cleared = true
 			break
 		}
