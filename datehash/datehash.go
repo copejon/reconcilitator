@@ -41,12 +41,13 @@ func clearEntries(lhs, rhs []*entry.Entry) (cleared int) {
 }
 
 func oldestEntry(d DateHash) time.Time {
-	var oldest time.Time
+	oldest := time.Now()
 	for t := range d {
 		if t.Before(oldest) {
 			oldest = t
 		}
 	}
+	fmt.Printf("oldest date: %v\n", oldest)
 	return oldest
 }
 
@@ -65,13 +66,13 @@ func (d DateHash) ClearHashedEntries(rhs DateHash) (cleared int) {
 
 	startDate := MostRecentStartTime(lhs, rhs)
 
-	for day, lhsDay := range lhs {
+	for date, lhsDaysEntries := range lhs {
 		// Only compare entries from dates within the same span, ignore dates prior to this subset
-		if day.Before(startDate) {
+		if date.Before(startDate) {
 			continue
 		}
-		if rhsEntries, ok := rhs[day]; ok {
-			cleared += clearEntries(lhsDay, rhsEntries)
+		if rhsDaysEntries, ok := rhs[date]; ok {
+			cleared += clearEntries(lhsDaysEntries, rhsDaysEntries)
 		}
 	}
 	return
@@ -99,4 +100,11 @@ func (d DateHash) ClearEntry(t time.Time, uuid uuid.UUID) bool {
 		}
 	}
 	return cleared
+}
+
+func (d DateHash) Entries() (i int) {
+	for _, e := range d {
+		i += len(e)
+	}
+	return
 }
