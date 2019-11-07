@@ -14,35 +14,55 @@ import (
 )
 
 var (
+	ynabToken,
+	ynabBudget,
 	ynabAccount,
 	ynabCSV,
 	bankCSV string
+	afterDate time.Duration
 )
 
+const (
+	tokenFlag   = "token"
+	accountFlag = "account"
+	budgetFlag  = "budget"
+	ynabCSVFlag = "ynab"
+	usaaCSVFlag = "bank"
+)
+
+func loadRegisterFromFile(r register.Register, fp string) {
+	f, err := os.OpenFile(fp, os.O_RDONLY, 0)
+	defer f.Close()
+	if err != nil {
+		panic(err)
+	}
+	err = r.Load(f)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func formatDate(t time.Time) string {
+	return fmt.Sprintf("%d/%d/%d", t.Month(), t.Day(), t.Year())
+}
+
 func init() {
-	pflag.StringVarP(&ynabAccount, "account", "a", "", "Case Sensitive. Because YNAB exports all accounts as one .csv, we need this to target the relative entries")
-	pflag.StringVarP(&ynabCSV, "ynab", "y", "", "Path to YNAB CSV file")
-	pflag.StringVarP(&bankCSV, "bank", "b", "", "Path to bank CSV file")
+	pflag.DurationVarP(&afterDate, "after", "a", 0, "The date after which to compare entries")
+	pflag.StringVarP(&ynabToken, tokenFlag, "t", "", "Your YNAB token.")
+	pflag.StringVarP(&ynabAccount, accountFlag, "a", "", "Case Sensitive. Because YNAB exports all accounts as one .csv, we need this to target the relative entries")
+	pflag.StringVarP(&ynabBudget, budgetFlag, "b", "", "Your YNAB Budget")
+	pflag.StringVarP(&ynabCSV, ynabCSVFlag, "y", "", "Path to YNAB CSV file")
+	pflag.StringVarP(&bankCSV, usaaCSVFlag, "f", "", "Path to bank CSV file")
 	pflag.Parse()
 }
 
 func main() {
 
-	if ynabCSV == "" {
-		panic(fmt.Errorf("missing required option: -ynab|-y"))
-	}
-	if ynabAccount == "" {
-		panic(fmt.Errorf("missing required option: -account|-a"))
-	}
-	if bankCSV == "" {
-		panic(fmt.Errorf("missing required option: -bank|-b"))
-	}
-
 	ynabReg := register.NewRegister(yxltr.NewTranslator(ynabAccount))
-	loadRegister(ynabReg, ynabCSV)
+	loadRegisterFromFile(ynabReg, ynabCSV)
 
 	usaaReg := register.NewRegister(uxltr.NewTranslator())
-	loadRegister(usaaReg, bankCSV)
+	loadRegisterFromFile(usaaReg, bankCSV)
 
 	cleared := ynabReg.Clear(usaaReg)
 	tbl := table.NewWriter()
@@ -81,20 +101,4 @@ func main() {
 		}
 	}
 	fmt.Println(tbl.Render())
-}
-
-func loadRegister(r register.Register, fp string) {
-	f, err := os.OpenFile(fp, os.O_RDONLY, 0)
-	defer f.Close()
-	if err != nil {
-		panic(err)
-	}
-	err = r.Load(f)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func formatDate(t time.Time) string {
-	return fmt.Sprintf("%d/%d/%d", t.Month(), t.Day(), t.Year())
 }
