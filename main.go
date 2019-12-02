@@ -47,7 +47,7 @@ func formatDate(t time.Time) string {
 }
 
 func init() {
-	pflag.DurationVarP(&afterDate, "after", "a", 0, "The date after which to compare entries")
+	pflag.DurationVar(&afterDate, "since", 0, "The date after which to compare entries")
 	pflag.StringVarP(&ynabToken, tokenFlag, "t", "", "Your YNAB token.")
 	pflag.StringVarP(&ynabAccount, accountFlag, "a", "", "Case Sensitive. Because YNAB exports all accounts as one .csv, we need this to target the relative entries")
 	pflag.StringVarP(&ynabBudget, budgetFlag, "b", "", "Your YNAB Budget")
@@ -67,7 +67,7 @@ func main() {
 	cleared := ynabReg.Clear(usaaReg)
 	tbl := table.NewWriter()
 	tbl.SetAutoIndex(true)
-	tbl.SetTitle("YNAB Entries vs USAA")
+	tbl.SetTitle("YNAB Entries Test")
 	tbl.AppendHeader(table.Row{"Date", "Payee", "Amount", "Cleared", "Sort"})
 	tbl.AppendFooter(table.Row{fmt.Sprintf("Cleared: %d", cleared)})
 

@@ -9,6 +9,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.4.0 // indirect
-	go.bmvs.io/ynab v1.3.0 // indirect
+	go.bmvs.io/ynab v1.3.0
 	golang.org/x/sys v0.0.0-20191010194322-b09406accb47 // indirect
 )

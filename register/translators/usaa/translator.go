@@ -2,6 +2,7 @@ package usaa
 
 import (
 	"fmt"
+	"io"
 	"main/register"
 	"main/register/entry"
 	"main/register/translator"
@@ -19,6 +20,10 @@ const (
 )
 
 type usaaTranslator struct{}
+
+func (u *usaaTranslator) Translate(r io.Reader) ([]*entry.Entry, error) {
+	panic("implement me")
+}
 
 var _ translator.Translator = &usaaTranslator{}
 

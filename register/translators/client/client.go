@@ -1,37 +1,36 @@
 package client
 
 import (
-	"fmt"
 	"go.bmvs.io/ynab"
 	"go.bmvs.io/ynab/api"
 	"go.bmvs.io/ynab/api/transaction"
-	"main/register/entry"
-	iface "main/register/translator"
 	"time"
 )
 
-type translator struct {
-	c            ynab.ClientServicer
-	transactions []*transaction.Transaction
+type Config struct {
+	budgetID,
+	token string
+	since *time.Time
 }
 
-var _ iface.Translator = &translator{}
+type Reader struct {
+	cfg *Config
+	*transactionReader
+}
 
-func NewTranslator(token, budget, account string, after time.Time) (*translator, error) {
-	c := ynab.NewClient(token)
-	if c == nil {
-		return nil, fmt.Errorf("error getting ynab client")
-	}
-	f := &transaction.Filter{Since: &api.Date{
-		Time: after,
-	}}
-	t, err := c.Transaction().GetTransactionsByAccount(budget, account, f)
+func NewClientReader(cfg *Config) (*Reader, error) {
+	c := ynab.NewClient(cfg.token)
+	date, err := api.DateFromString(cfg.since.String())
 	if err != nil {
 		return nil, err
 	}
-	return &translator{c: c, transactions: t}, nil
-}
-
-func (t *translator) ToEntry(s []string) (*entry.Entry, error) {
-
+	f := &transaction.Filter{
+		Since: &date,
+		Type:  nil,
+	}
+	trans, err := c.Transaction().GetTransactions(cfg.budgetID, f)
+	rdr := newTransactionReader(trans)
+	return &Reader{
+		cfg:               cfg,
+		transactionReader: rdr}, nil
 }
