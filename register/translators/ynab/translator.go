@@ -6,60 +6,56 @@ import (
 	"io"
 	"main/register"
 	"main/register/entry"
-	"main/register/translator"
+	iface "main/register/translator"
 )
 
 const (
 	acct = iota
-	flag
+	_
 	date
 	payee
-	groupCategory
-	group
-	category
-	memo
+	_
+	_
+	_
+	_
 	outflow
 	inflow
-	cleared
+	_
 )
 
-type ynabTranslator struct {
+var _ iface.Translator = &translator{}
+
+type translator struct {
 	account string
 }
 
-var _ translator.Translator = &ynabTranslator{}
-
-func NewTranslator(account string) *ynabTranslator {
-	return &ynabTranslator{account: account}
+func NewTranslator(account string) *translator {
+	return &translator{account: account}
 }
 
-func (t *ynabTranslator) Translate(r io.Reader) ([]*entry.Entry, error) {
+func (t *translator) Translate(r io.Reader) ([]*entry.Entry, error) {
 	rdr := csv.NewReader(r)
 	rdr.LazyQuotes = true
 	return t.readRecordsToEntries(rdr)
 }
 
-func (t *ynabTranslator) readRecordsToEntries(r *csv.Reader) (entries []*entry.Entry, err error) {
+func (t *translator) readRecordsToEntries(r *csv.Reader) (entries []*entry.Entry, err error) {
 	entries = make([]*entry.Entry, 0, 4096)
 	var e *entry.Entry
-	for stop := false; !stop; {
+	for {
 		e, err = t.readRecordToEntry(r)
-		if err == nil {
-			entries = append(entries, e)
+		if err != nil {
+			break
 		}
-		stop = stopReads(err)
+		entries = append(entries, e)
 	}
-	if err != nil && err != io.EOF {
+	if err != io.EOF {
 		return nil, fmt.Errorf("could not read records to entries: %v", err)
 	}
 	return entries, nil
 }
 
-func stopReads(err error) bool {
-	return err != nil && !isExpected(err)
-}
-
-func (t *ynabTranslator) readRecordToEntry(r *csv.Reader) (*entry.Entry, error) {
+func (t *translator) readRecordToEntry(r *csv.Reader) (*entry.Entry, error) {
 	rec, err := r.Read()
 	if err != nil {
 		return nil, err
@@ -67,14 +63,12 @@ func (t *ynabTranslator) readRecordToEntry(r *csv.Reader) (*entry.Entry, error) 
 	return t.parseRecord(rec)
 }
 
-func (t *ynabTranslator) parseRecord(record []string) (*entry.Entry, error) {
-
+func (t *translator) parseRecord(record []string) (*entry.Entry, error) {
 	// Ynab CSVs contain all tracked accounts as one, ignore all but the specified one
-
 	if record[acct] != t.account {
 		return nil, newIsNotAccountError(t.account, record[acct])
 	}
-	errMsg := `couldn't generate entry: %v\n`
+	errMsg := `error parsing record`
 	e := entry.NewEntry()
 
 	e.SetPayee(record[payee])
@@ -93,12 +87,9 @@ func (t *ynabTranslator) parseRecord(record []string) (*entry.Entry, error) {
 		if err != nil {
 			return nil, fmt.Errorf(errMsg, err)
 		}
-		// YNAB stores outflows at positive numbers, so we negate them here
-		if amt > 0 {
-			amt = 0 - amt
-		}
+		// YNAB stores outflows at positive numbers, manually negate them here
+		amt = -amt
 	}
 	e.SetAmount(amt)
 	return e, nil
-
 }

@@ -51,7 +51,7 @@ func (r *register) Load(rdr io.Reader) error {
 			return fmt.Errorf("failed to load register: %v\n", err)
 		}
 
-		e, err := r.t.ToEntry(line)
+		e, err := r.t.Translate(line)
 		if err != nil {
 			return fmt.Errorf("failed to get new entry: %v\n", err)
 		}

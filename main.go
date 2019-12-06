@@ -32,10 +32,10 @@ const (
 
 func loadRegisterFromFile(r register.Register, fp string) {
 	f, err := os.OpenFile(fp, os.O_RDONLY, 0)
-	defer f.Close()
 	if err != nil {
 		panic(err)
 	}
+	defer f.Close()
 	err = r.Load(f)
 	if err != nil {
 		panic(err)
