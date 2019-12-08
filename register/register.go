@@ -4,7 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"main/register/entry"
+	"main/register/dateMapper"
 	"main/register/translator"
 	"strconv"
 	"strings"
@@ -13,17 +13,31 @@ import (
 
 type Register interface {
 	Load(io.Reader) error
-	Read() (*entry.Entry, error)
-	ReadAll() ([]*entry.Entry, error)
-}
-
-type register struct {
-	entries    []*entry.Entry
-	xltr       translator.Translator
-	readCursor int
+	Clear(Register) error
+	Entries() dateMapper.DateMapper
+	//Read() (*entry.Entry, error)
+	//ReadAll() ([]*entry.Entry, error)
 }
 
 var _ Register = &register{}
+
+type register struct {
+	entries    dateMapper.DateMapper
+	t          translator.Translator
+	readCursor int
+}
+
+func (r *register) Entries() dateMapper.DateMapper {
+	return r.entries
+}
+
+func NewRegister(translator translator.Translator) *register {
+	return &register{
+		entries:    make(dateMapper.DateMapper),
+		readCursor: 0,
+		t:          translator,
+	}
+}
 
 func (r *register) Load(rdr io.Reader) error {
 	csvRdr := csv.NewReader(rdr)
@@ -37,7 +51,7 @@ func (r *register) Load(rdr io.Reader) error {
 			return fmt.Errorf("failed to load register: %v\n", err)
 		}
 
-		e, err := r.xltr.ToEntry(line)
+		e, err := r.t.ToEntry(line)
 		if err != nil {
 			return fmt.Errorf("failed to get new entry: %v\n", err)
 		}
@@ -45,42 +59,32 @@ func (r *register) Load(rdr io.Reader) error {
 			// translators are allowed to return nil entries as a result of filtering, etc.
 			continue
 		}
-		r.entries = append(r.entries, e)
+		r.entries.Push(e)
 	}
 	return nil
 }
 
-func (r *register) Read() (*entry.Entry, error) {
-	if r.readCursor >= len(r.entries) {
-		return nil, io.EOF
-	}
-	e := r.entries[r.readCursor]
-	r.readCursor++
-	return e, nil
+func (r *register) Clear(reg Register) error {
+	r.entries.ClearEntries(reg.Entries())
+	return nil
 }
 
-func (r *register) ReadAll() ([]*entry.Entry, error) {
-	if r.readCursor >= len(r.entries) {
-		return nil, io.EOF
-	}
-	remainder := r.entries[r.readCursor:]
-	r.readCursor = len(r.entries)
-	return remainder, nil
-}
-
-func NewRegister(t translator.Translator) *register {
-	return &register{
-		entries:    make([]*entry.Entry, 0),
-		readCursor: 0,
-		xltr:       t,
-	}
-}
-
-//const bomBytes = "\xEF\xBB\xBF"
+//func (r *register) Read() (*entry.Entry, error) {
+//	if r.readCursor >= len(r.entries) {
+//		return nil, io.EOF
+//	}
+//	e := r.entries[r.readCursor]
+//	r.readCursor++
+//	return e, nil
+//}
 //
-//func stripUTF8BOM(s string) string {
-//	b := bytes.TrimLeft([]byte(s), bomBytes)
-//	return string(b)
+//func (r *register) ReadAll() ([]*entry.Entry, error) {
+//	if r.readCursor >= len(r.entries) {
+//		return nil, io.EOF
+//	}
+//	remainder := r.entries[r.readCursor:]
+//	r.readCursor = len(r.entries)
+//	return remainder, nil
 //}
 
 func ParseCurrency(c string) (float64, error) {

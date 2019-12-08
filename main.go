@@ -5,8 +5,8 @@ import (
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/pflag"
-	"main/dateMapper"
 	"main/register"
+	"main/register/dateMapper"
 	uxltr "main/register/translators/usaa"
 	yxltr "main/register/translators/ynab"
 	"os"
@@ -44,16 +44,7 @@ func main() {
 	usaaReg := register.NewRegister(uxltr.NewTranslator())
 	loadRegister(usaaReg, bankCSV)
 
-	ynab, err := dateMapper.NewDateMapper(ynabReg)
-	if err != nil {
-		panic(err)
-	}
-	usaa, err := dateMapper.NewDateMapper(usaaReg)
-	if err != nil {
-		panic(err)
-	}
-
-	cleared := ynab.ClearEntries(usaa)
+	cleared := ynabReg.Clear(usaaReg)
 	tbl := table.NewWriter()
 	tbl.SetAutoIndex(true)
 	tbl.SetTitle("YNAB Entries vs USAA")
@@ -78,13 +69,13 @@ func main() {
 		},
 	})
 
-	backDate := dateMapper.MostRecentStartTime(ynab, usaa)
+	startDate := dateMapper.MostRecentStartTime(ynabReg.Entries(), usaaReg.Entries())
 
-	fmt.Printf("back date: %v\n", backDate)
-	for _, entries := range ynab {
-		for _, e := range entries {
-			if e.Date().Before(backDate) {
-				break
+	fmt.Printf("back date: %v\n", startDate)
+	for _, day := range ynabReg.Entries() {
+		for _, e := range day {
+			if e.Date().Before(startDate) {
+				continue
 			}
 			tbl.AppendRow(table.Row{formatDate(e.Date()), e.Payee(), e.Amount(), e.Cleared(), e.Date().Unix()})
 		}

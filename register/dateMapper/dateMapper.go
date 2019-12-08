@@ -1,15 +1,11 @@
 package dateMapper
 
 import (
-	"fmt"
-	"github.com/google/uuid"
-	"io"
-	"main/register"
 	"main/register/entry"
 	"time"
 )
 
-func NewDateMapper(r register.Register) (DateMapper, error) {
+/*func NewDateMapper(r register.Register) (DateMapper, error) {
 	var m = make(DateMapper)
 	for {
 		e, err := r.Read()
@@ -21,7 +17,7 @@ func NewDateMapper(r register.Register) (DateMapper, error) {
 		m[e.Date()] = append(m[e.Date()], e)
 	}
 	return m, nil
-}
+}*/
 
 func clearEntries(lhs, rhs []*entry.Entry) (cleared int) {
 	for _, lhsEnt := range lhs {
@@ -42,12 +38,11 @@ func clearEntries(lhs, rhs []*entry.Entry) (cleared int) {
 
 func oldestEntry(d DateMapper) time.Time {
 	oldest := time.Now()
-	for t := range d {
+	for t, _ := range d {
 		if t.Before(oldest) {
 			oldest = t
 		}
 	}
-	fmt.Printf("oldest date: %v\n", oldest)
 	return oldest
 }
 
@@ -60,6 +55,10 @@ func MostRecentStartTime(d1, d2 DateMapper) (t time.Time) {
 }
 
 type DateMapper map[time.Time][]*entry.Entry
+
+func (d DateMapper) Push(entry *entry.Entry) {
+	d[entry.Date()] = append(d[entry.Date()], entry)
+}
 
 func (d DateMapper) ClearEntries(rhs DateMapper) (cleared int) {
 	lhs := d
@@ -89,11 +88,11 @@ func (d DateMapper) DayHasEntry(t time.Time, amount float64) (bool, int) {
 	return instances != 0, instances
 }
 
-func (d DateMapper) ClearEntry(t time.Time, uuid uuid.UUID) bool {
-	day := d[t]
+func (d DateMapper) ClearEntry(againstEntry *entry.Entry) bool {
+	daysEntries := d[againstEntry.Date()]
 	var cleared bool
-	for _, e := range day {
-		if e.Id() == uuid {
+	for _, e := range daysEntries {
+		if e.ImportID() == againstEntry.ImportID() {
 			e.SetCleared()
 			cleared = true
 			break
