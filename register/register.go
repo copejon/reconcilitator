@@ -21,9 +21,10 @@ type Register interface {
 
 var _ Register = &register{}
 
+// register implements the Register AND Translator interfaces
 type register struct {
+	translator.Translator
 	entries    dateMapper.DateMapper
-	t          translator.Translator
 	readCursor int
 }
 
@@ -35,7 +36,7 @@ func NewRegister(translator translator.Translator) *register {
 	return &register{
 		entries:    make(dateMapper.DateMapper),
 		readCursor: 0,
-		t:          translator,
+		Translator: translator,
 	}
 }
 
@@ -43,20 +44,13 @@ func (r *register) Load(rdr io.Reader) error {
 	csvRdr := csv.NewReader(rdr)
 	csvRdr.LazyQuotes = true
 
-	for {
-		line, err := csvRdr.Read()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return fmt.Errorf("failed to load register: %v\n", err)
-		}
-
-		e, err := r.t.Translate(line)
-		if err != nil {
-			return fmt.Errorf("failed to get new entry: %v\n", err)
-		}
+	entries, err := r.Translate(rdr)
+	if err != nil {
+		return fmt.Errorf("failed to get new entry: %v\n", err)
+	}
+	for _, e := range entries {
 		if e == nil {
-			// translators are allowed to return nil entries as a result of filtering, etc.
+			// translators are allowed to return nil entries
 			continue
 		}
 		r.entries.Push(e)

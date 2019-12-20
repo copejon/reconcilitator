@@ -33,6 +33,8 @@ func NewTranslator(account string) *translator {
 	return &translator{account: account}
 }
 
+// Translate takes a reader who's output is expected to be CSV formated
+// returns a slice of entries or an error
 func (t *translator) Translate(r io.Reader) ([]*entry.Entry, error) {
 	rdr := csv.NewReader(r)
 	rdr.LazyQuotes = true

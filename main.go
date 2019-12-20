@@ -49,7 +49,7 @@ func formatDate(t time.Time) string {
 func init() {
 	pflag.DurationVar(&afterDate, "since", 0, "The date after which to compare entries")
 	pflag.StringVarP(&ynabToken, tokenFlag, "t", "", "Your YNAB token.")
-	pflag.StringVarP(&ynabAccount, accountFlag, "a", "", "Case Sensitive. Because YNAB exports all accounts as one .csv, we need this to target the relative entries")
+	pflag.StringVarP(&ynabAccount, accountFlag, "a", "", "Case Sensitive. Because YNAB exports all accounts as one .csv_utils, we need this to target the relative entries")
 	pflag.StringVarP(&ynabBudget, budgetFlag, "b", "", "Your YNAB Budget")
 	pflag.StringVarP(&ynabCSV, ynabCSVFlag, "y", "", "Path to YNAB CSV file")
 	pflag.StringVarP(&bankCSV, usaaCSVFlag, "f", "", "Path to bank CSV file")
