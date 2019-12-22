@@ -1,18 +1,22 @@
 package ynab
 
-import "fmt"
+import (
+	"fmt"
+	tranerr "main/register/translators/translator_errors"
+)
 
-func isExpected(err error) bool {
-	exErr, ok := err.(expectedError)
-	return ok && exErr.expected()
-}
-
-type expectedError interface {
-	expected() bool
-}
+var _ tranerr.ExpectedError = &notAccountError{}
 
 type notAccountError struct {
 	w, g string
+}
+
+func (e *notAccountError) IsExpected(err error) (expected bool) {
+	switch err.(type) {
+	case tranerr.ExpectedError:
+		return true
+	}
+	return
 }
 
 func newIsNotAccountError(want, got string) *notAccountError {
@@ -23,6 +27,10 @@ func (e notAccountError) Error() string {
 	return fmt.Sprintf("want account %q, got account %q", e.w, e.g)
 }
 
-func (e notAccountError) expected() bool {
-	return true
+func isExpected(err error) bool {
+	switch err.(type) {
+	case tranerr.ExpectedError:
+		return true
+	}
+	return false
 }

@@ -7,6 +7,7 @@ import (
 	"main/register"
 	"main/register/entry"
 	iface "main/register/translator"
+	"strings"
 )
 
 const (
@@ -46,7 +47,7 @@ func (t *translator) readRecordsToEntries(r *csv.Reader) (entries []*entry.Entry
 	var e *entry.Entry
 	for {
 		e, err = t.readRecordToEntry(r)
-		if err != nil {
+		if e == nil && err != nil && !isExpected(err){
 			break
 		}
 		entries = append(entries, e)
@@ -66,15 +67,21 @@ func (t *translator) readRecordToEntry(r *csv.Reader) (*entry.Entry, error) {
 }
 
 func (t *translator) parseRecord(record []string) (*entry.Entry, error) {
-	// Ynab CSVs contain all tracked accounts as one, ignore all but the specified one
+	// YNAB CSVs contain all tracked accounts, ignore entries for other accounts
+	if t.isHeader(record) {
+		return nil, nil
+	}
 	if record[acct] != t.account {
 		return nil, newIsNotAccountError(t.account, record[acct])
 	}
-	errMsg := `error parsing record`
+	errMsg := `error parsing record: %v`
 	e := entry.NewEntry()
 
 	e.SetPayee(record[payee])
-	d, err := register.ParseDate(record[date])
+
+	const dateFormat = "01/02/2006"
+
+	d, err := register.ParseDate(record[date], dateFormat)
 	if err != nil {
 		return nil, fmt.Errorf(errMsg, err)
 	}
@@ -94,4 +101,8 @@ func (t *translator) parseRecord(record []string) (*entry.Entry, error) {
 	}
 	e.SetAmount(amt)
 	return e, nil
+}
+
+func (t *translator) isHeader(record []string) bool {
+	return strings.Contains(record[0], "Account")
 }

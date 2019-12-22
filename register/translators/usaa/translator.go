@@ -32,12 +32,12 @@ func NewTranslator() *translator {
 // returns a slice of entries or an error
 func (t *translator) Translate(r io.Reader) (entries []*entry.Entry, err error) {
 	rdr := csv.NewReader(r)
-	rdr.LazyQuotes = true
+	//rdr.LazyQuotes = true
 	entries, err = t.readRecordsToEntries(rdr)
 	if err != nil {
-		err = fmt.Errorf("failed translation")
+		return nil, fmt.Errorf("failed translation: %v", err)
 	}
-	return
+	return entries, nil
 }
 
 // TODO this entire func is a dupe of ynab's.
@@ -62,7 +62,7 @@ func (t *translator) readRecordsToEntries(r *csv.Reader) ([]*entry.Entry, error)
 func (t *translator) readRecordToEntry(r *csv.Reader) (*entry.Entry, error) {
 	record, err := r.Read()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read record: %v", err)
+		return nil, err
 	}
 	return t.parseRecord(record)
 }
@@ -73,7 +73,10 @@ func (t *translator) parseRecord(rec []string) (*entry.Entry, error) {
 	e := entry.NewEntry()
 
 	e.SetPayee(rec[payee])
-	d, err := register.ParseDate(rec[date])
+
+	const pattern = "01/02/2006"
+
+	d, err := register.ParseDate(rec[date], pattern)
 	if err != nil {
 		return nil, fmt.Errorf(errMsg, err)
 	}

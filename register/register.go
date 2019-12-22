@@ -1,7 +1,6 @@
 package register
 
 import (
-	"encoding/csv"
 	"fmt"
 	"io"
 	"main/register/dateMapper"
@@ -41,12 +40,9 @@ func NewRegister(translator translator.Translator) *register {
 }
 
 func (r *register) Load(rdr io.Reader) error {
-	csvRdr := csv.NewReader(rdr)
-	csvRdr.LazyQuotes = true
-
 	entries, err := r.Translate(rdr)
 	if err != nil {
-		return fmt.Errorf("failed to get new entry: %v\n", err)
+		return fmt.Errorf("error loading from file: %v", err)
 	}
 	for _, e := range entries {
 		if e == nil {
@@ -90,9 +86,8 @@ func ParseCurrency(c string) (float64, error) {
 	return f, err
 }
 
-func ParseDate(d string) (time.Time, error) {
-	const format = `01/02/2006`
-	t, err := time.Parse(format, d)
+func ParseDate(d, pattern string) (time.Time, error) {
+	t, err := time.Parse(pattern, d)
 	if err != nil {
 		err = fmt.Errorf("error parsing entry date: %v\n", err)
 	}

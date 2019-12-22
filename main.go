@@ -27,19 +27,20 @@ const (
 	accountFlag = "account"
 	budgetFlag  = "budget"
 	ynabCSVFlag = "ynab"
-	usaaCSVFlag = "bank"
+	bankCSVFlag = "bank"
 )
 
-func loadRegisterFromFile(r register.Register, fp string) {
+func loadRegisterFromFile(r register.Register, fp string) error {
 	f, err := os.OpenFile(fp, os.O_RDONLY, 0)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("could not open file: %v", err))
 	}
 	defer f.Close()
 	err = r.Load(f)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("error loading file %s: %v", fp, err)
 	}
+	return nil
 }
 
 func formatDate(t time.Time) string {
@@ -52,17 +53,23 @@ func init() {
 	pflag.StringVarP(&ynabAccount, accountFlag, "a", "", "Case Sensitive. Because YNAB exports all accounts as one .csv_utils, we need this to target the relative entries")
 	pflag.StringVarP(&ynabBudget, budgetFlag, "b", "", "Your YNAB Budget")
 	pflag.StringVarP(&ynabCSV, ynabCSVFlag, "y", "", "Path to YNAB CSV file")
-	pflag.StringVarP(&bankCSV, usaaCSVFlag, "f", "", "Path to bank CSV file")
+	pflag.StringVarP(&bankCSV, bankCSVFlag, "c", "", "Path to bank CSV file")
 	pflag.Parse()
 }
 
 func main() {
 
 	ynabReg := register.NewRegister(yxltr.NewTranslator(ynabAccount))
-	loadRegisterFromFile(ynabReg, ynabCSV)
+	err := loadRegisterFromFile(ynabReg, ynabCSV)
+	if err != nil {
+		panic(err)
+	}
 
 	usaaReg := register.NewRegister(uxltr.NewTranslator())
-	loadRegisterFromFile(usaaReg, bankCSV)
+	err = loadRegisterFromFile(usaaReg, bankCSV)
+	if err != nil {
+		panic(err)
+	}
 
 	cleared := ynabReg.Clear(usaaReg)
 	tbl := table.NewWriter()
