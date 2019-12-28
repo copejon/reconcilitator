@@ -71,12 +71,14 @@ func main() {
 		panic(err)
 	}
 
-	cleared := ynabReg.Clear(usaaReg)
+	err = ynabReg.Clear(usaaReg)
+	if err != nil {
+		panic(err)
+	}
 	tbl := table.NewWriter()
 	tbl.SetAutoIndex(true)
 	tbl.SetTitle("YNAB Entries Test")
 	tbl.AppendHeader(table.Row{"Date", "Payee", "Amount", "Cleared", "Sort"})
-	tbl.AppendFooter(table.Row{fmt.Sprintf("Cleared: %d", cleared)})
 
 	tbl.SortBy([]table.SortBy{{
 		Name: "Sort",

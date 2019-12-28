@@ -1,9 +1,11 @@
 package usaa
 
 import (
+	"bytes"
 	"encoding/csv"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"main/register"
 	"main/register/entry"
 	iface "main/register/translator"
@@ -28,11 +30,15 @@ func NewTranslator() *translator {
 	return &translator{}
 }
 
-// Translate takes a reader who's output is expected to be CSV formated
+// Translate takes a reader who's output is expected to be CSV formatted
 // returns a slice of entries or an error
 func (t *translator) Translate(r io.Reader) (entries []*entry.Entry, err error) {
-	rdr := csv.NewReader(r)
-	//rdr.LazyQuotes = true
+	nr, err := normalizeLineFeed(r)
+	if err != nil {
+		return nil, err
+	}
+	rdr := csv.NewReader(nr)
+	rdr.LazyQuotes = true
 	entries, err = t.readRecordsToEntries(rdr)
 	if err != nil {
 		return nil, fmt.Errorf("failed translation: %v", err)
@@ -48,7 +54,7 @@ func (t *translator) readRecordsToEntries(r *csv.Reader) ([]*entry.Entry, error)
 	var err error
 	for {
 		e, err = t.readRecordToEntry(r)
-		if err != nil {
+		if err != nil || e == nil {
 			break
 		}
 		entries = append(entries, e)
@@ -61,13 +67,22 @@ func (t *translator) readRecordsToEntries(r *csv.Reader) ([]*entry.Entry, error)
 
 func (t *translator) readRecordToEntry(r *csv.Reader) (*entry.Entry, error) {
 	record, err := r.Read()
+	fmt.Printf("rec: <%s> len: %d\n", record, len(record))
 	if err != nil {
 		return nil, err
 	}
+	if len(record) == 0 {
+		return nil, nil
+	}
+	record[amount] = strings.TrimSpace(record[amount])
 	return t.parseRecord(record)
 }
 
 func (t *translator) parseRecord(rec []string) (*entry.Entry, error) {
+
+	if len(rec) == 0 {
+		return nil, nil
+	}
 	var err error
 	errMsg := `couldn't generate entry: %v\n'`
 	e := entry.NewEntry()
@@ -88,4 +103,18 @@ func (t *translator) parseRecord(rec []string) (*entry.Entry, error) {
 	}
 	e.SetAmount(a)
 	return e, nil
+}
+
+const (
+	crByte = 0x0d
+	lfByte = 0x0a
+)
+
+func normalizeLineFeed(r io.Reader) (*bytes.Reader, error) {
+	buf, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("error normalizing linefeeds: %v", err)
+	}
+	buf = bytes.ReplaceAll(buf, []byte{crByte}, []byte{lfByte})
+	return bytes.NewReader(buf), nil
 }
