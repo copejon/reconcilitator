@@ -71,7 +71,11 @@ func defaultOpts() *tableFormatterOpts {
 	}
 }
 
-func (t *tableFormatter) setWriter() (tw table.Writer) {
+func isOnOrAfter(t, u time.Time) bool {
+	return t.Equal(u) || t.After(u)
+}
+
+func (t *tableFormatter) setWriter() {
 	t.w = table.NewWriter()
 	t.w.SetTitle(t.title)
 	t.w.SortBy(sortConfig())
@@ -87,8 +91,7 @@ func (t *tableFormatter) loadTable() {
 	for _, day := range t.reg.Entries() {
 		for _, e := range day {
 			// if the entry falls on or after opts.since, append it to the table
-			if e.Date().After(opts.since) ||
-				e.Date().Equal(opts.since) {
+			if isOnOrAfter(e.Date(), opts.since) {
 				t.w.AppendRow(table.Row{
 					e.Date(),
 					e.Payee(),
@@ -107,7 +110,7 @@ func NewTableFormatter(r register.Register, title string, opts *tableFormatterOp
 		opts:  opts,
 		reg:   r,
 	}
-	tf.w = tf.setWriter()
+	tf.setWriter()
 	tf.loadTable()
 	return tf
 }
