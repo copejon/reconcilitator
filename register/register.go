@@ -14,8 +14,6 @@ type Register interface {
 	Load(io.Reader) error
 	Clear(Register) error
 	Entries() dateMapper.DateMapper
-	//Read() (*entry.Entry, error)
-	//ReadAll() ([]*entry.Entry, error)
 }
 
 var _ Register = &register{}
@@ -58,24 +56,6 @@ func (r *register) Clear(reg Register) error {
 	r.entries.ClearEntries(reg.Entries())
 	return nil
 }
-
-//func (r *register) Read() (*entry.Entry, error) {
-//	if r.readCursor >= len(r.entries) {
-//		return nil, io.EOF
-//	}
-//	e := r.entries[r.readCursor]
-//	r.readCursor++
-//	return e, nil
-//}
-//
-//func (r *register) ReadAll() ([]*entry.Entry, error) {
-//	if r.readCursor >= len(r.entries) {
-//		return nil, io.EOF
-//	}
-//	remainder := r.entries[r.readCursor:]
-//	r.readCursor = len(r.entries)
-//	return remainder, nil
-//}
 
 func ParseCurrency(c string) (float64, error) {
 	s := strings.Trim(c, "$")

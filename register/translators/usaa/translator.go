@@ -67,7 +67,6 @@ func (t *translator) readRecordsToEntries(r *csv.Reader) ([]*entry.Entry, error)
 
 func (t *translator) readRecordToEntry(r *csv.Reader) (*entry.Entry, error) {
 	record, err := r.Read()
-	fmt.Printf("rec: <%s> len: %d\n", record, len(record))
 	if err != nil {
 		return nil, err
 	}
