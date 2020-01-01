@@ -2,11 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/jedib0t/go-pretty/table"
-	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/pflag"
 	"main/register"
-	"main/register/dateMapper"
 	uxltr "main/register/translators/usaa"
 	yxltr "main/register/translators/ynab"
 	"os"
@@ -43,10 +40,6 @@ func loadRegisterFromFile(r register.Register, fp string) error {
 	return nil
 }
 
-func formatDate(t time.Time) string {
-	return fmt.Sprintf("%d/%d/%d", t.Month(), t.Day(), t.Year())
-}
-
 func init() {
 	pflag.DurationVar(&afterDate, "since", 0, "The date after which to compare entries")
 	pflag.StringVarP(&ynabToken, tokenFlag, "t", "", "Your YNAB token.")
@@ -75,39 +68,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	tbl := table.NewWriter()
-	tbl.SetAutoIndex(true)
-	tbl.SetTitle("YNAB Entries Test")
-	tbl.AppendHeader(table.Row{"Date", "Payee", "Amount", "Cleared", "Sort"})
 
-	tbl.SortBy([]table.SortBy{{
-		Name: "Sort",
-		Mode: table.DscNumeric,
-	}})
-
-	tbl.SetRowPainter(func(row table.Row) text.Colors {
-		if cleared, ok := row[3].(bool); ok && !cleared {
-			return text.Colors{text.BgRed, text.Bold}
-		}
-		return nil
-	})
-	tbl.SetColumnConfigs([]table.ColumnConfig{
-		{
-			Name:        "Amount",
-			Transformer: text.NewNumberTransformer("%.2f"),
-		},
+	tableFormatter := NewTableFormatter(ynabReg, "YNAB", &tableFormatterOpts{
+		since:     time.Time{},
+		numDays:   0,
+		autoIndex: false,
 	})
 
-	startDate := dateMapper.MostRecentStartTime(ynabReg.Entries(), usaaReg.Entries())
-
-	fmt.Printf("back date: %v\n", startDate)
-	for _, day := range ynabReg.Entries() {
-		for _, e := range day {
-			if e.Date().Before(startDate) {
-				continue
-			}
-			tbl.AppendRow(table.Row{formatDate(e.Date()), e.Payee(), e.Amount(), e.Cleared(), e.Date().Unix()})
-		}
-	}
-	fmt.Println(tbl.Render())
+	fmt.Println(tableFormatter.w.Render())
 }

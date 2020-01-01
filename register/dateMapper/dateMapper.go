@@ -5,20 +5,6 @@ import (
 	"time"
 )
 
-/*func NewDateMapper(r register.Register) (DateMapper, error) {
-	var m = make(DateMapper)
-	for {
-		e, err := r.Read()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return nil, fmt.Errorf("unable to map entry: %v\n", err)
-		}
-		m[e.Date()] = append(m[e.Date()], e)
-	}
-	return m, nil
-}*/
-
 func clearEntries(lhs, rhs []*entry.Entry) (cleared int) {
 	for _, lhsEnt := range lhs {
 		if lhsEnt.Cleared() { // Safety catch, ignore cleared LHS entries
@@ -38,7 +24,7 @@ func clearEntries(lhs, rhs []*entry.Entry) (cleared int) {
 
 func oldestEntry(d DateMapper) time.Time {
 	oldest := time.Now()
-	for t, _ := range d {
+	for t := range d {
 		if t.Before(oldest) {
 			oldest = t
 		}
@@ -62,7 +48,6 @@ func (d DateMapper) Push(entry *entry.Entry) {
 
 func (d DateMapper) ClearEntries(rhs DateMapper) (cleared int) {
 	lhs := d
-
 	startDate := MostRecentStartTime(lhs, rhs)
 
 	for date, lhsDaysEntries := range lhs {
