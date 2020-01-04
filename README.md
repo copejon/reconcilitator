@@ -1,5 +1,5 @@
 # reconcilitator
-_because I just can't be bother to find that one missing entry_
+_because I just can't be bothered to find that one missing entry_
 
 Still a WIP.
 
