@@ -70,7 +70,7 @@ func main() {
 	}
 
 	tableFormatter := NewTableFormatter(ynabReg, "YNAB", &tableFormatterOpts{
-		since:     time.Time{},
+		since:     dateMapper.MostRecentStartTime(ynabReg.Entries(), usaaReg.Entries()),
 		numDays:   0,
 		autoIndex: false,
 	})
