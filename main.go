@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/pflag"
 	"main/register"
+	"main/register/dateMapper"
 	uxltr "main/register/translators/usaa"
 	yxltr "main/register/translators/ynab"
 	"os"
@@ -70,7 +71,7 @@ func main() {
 	}
 
 	tableFormatter := NewTableFormatter(ynabReg, "YNAB", &tableFormatterOpts{
-		since:     time.Time{},
+		since:     dateMapper.MostRecentStartTime(ynabReg.Entries(), usaaReg.Entries()),
 		numDays:   0,
 		autoIndex: false,
 	})
