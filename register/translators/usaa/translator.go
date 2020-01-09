@@ -78,7 +78,6 @@ func (t *translator) readRecordToEntry(r *csv.Reader) (*entry.Entry, error) {
 }
 
 func (t *translator) parseRecord(rec []string) (*entry.Entry, error) {
-
 	if len(rec) == 0 {
 		return nil, nil
 	}
@@ -88,7 +87,7 @@ func (t *translator) parseRecord(rec []string) (*entry.Entry, error) {
 
 	e.SetPayee(rec[payee])
 
-	const pattern = "01/02/2006"
+	const pattern = "1/2/2006"
 
 	d, err := register.ParseDate(rec[date], pattern)
 	if err != nil {

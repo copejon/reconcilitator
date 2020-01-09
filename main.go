@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/pflag"
 	"main/register"
+	"main/register/dateMapper"
 	uxltr "main/register/translators/usaa"
 	yxltr "main/register/translators/ynab"
 	"os"
