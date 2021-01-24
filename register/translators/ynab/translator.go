@@ -4,10 +4,11 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"strings"
+
 	"main/register"
 	"main/register/entry"
 	iface "main/register/translator"
-	"strings"
 )
 
 const (
@@ -18,7 +19,7 @@ const (
 	_
 	_
 	_
-	_
+	memo
 	outflow
 	inflow
 	_
@@ -47,7 +48,7 @@ func (t *translator) readRecordsToEntries(r *csv.Reader) (entries []*entry.Entry
 	var e *entry.Entry
 	for {
 		e, err = t.readRecordToEntry(r)
-		if e == nil && err != nil && !isExpected(err){
+		if e == nil && err != nil && !isExpected(err) {
 			break
 		}
 		entries = append(entries, e)
@@ -73,6 +74,9 @@ func (t *translator) parseRecord(record []string) (*entry.Entry, error) {
 	}
 	if record[acct] != t.account {
 		return nil, newIsNotAccountError(t.account, record[acct])
+	}
+	if strings.Contains(record[memo], "Split (") {
+		return nil, nil
 	}
 	errMsg := `error parsing record: %v`
 	e := entry.NewEntry()
